@@ -12,3 +12,5 @@ Run `npm start` to start the built-in web server at [http://localhost:3000](http
 
 Run `npm run build` to build the project.
 
+![Screenshot](images/Screenshot.png)
+
