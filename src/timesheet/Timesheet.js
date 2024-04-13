@@ -15,18 +15,32 @@ const Timesheet = () => {
     {id: 3, name: "Project C", color: "#f1c232"},
   ];
 
+  const generateTimeOptions = (start, end) => {
+    const options = [];
+    let currentTime = start;
+    while (currentTime <= end) {
+      options.push({name: currentTime});
+      const [hour, minute] = currentTime.split(":").map(Number);
+      if (minute + 15 >= 60) {
+        currentTime = `${hour + 1}:00`;
+      } else {
+        currentTime = `${hour}:${minute + 15}`;
+      }
+    }
+    return options;
+  };
+
   const [config, setConfig] = useState({
     locale: "en-us",
     rowHeaderColumns: [
       {name: "Date"},
-      {name: "Day", width: 40}
+      {name: "Day", width: 40},
+      {name: "Start Time", width: 80, type: "datetime", options: generateTimeOptions("07:00", "22:00")},
+      {name: "End Time", width: 80, type: "datetime", options: generateTimeOptions("07:00", "22:00")}
     ],
     onBeforeRowHeaderRender: (args) => {
       args.row.columns[0].horizontalAlignment = "center";
       args.row.columns[1].text = args.row.start.toString("ddd");
-      if (args.row.columns[2]) {
-        args.row.columns[2].text = args.row.events.totalDuration().toString("h:mm");
-      }
     },
     onBeforeEventRender: (args) => {
       const duration = new DayPilot.Duration(args.data.start, args.data.end);
@@ -52,7 +66,6 @@ const Timesheet = () => {
         }
       ];
       args.data.html = "";
-
     },
     cellWidthSpec: "Auto",
     cellWidthMin: 25,
@@ -70,14 +83,8 @@ const Timesheet = () => {
       const dp = args.control;
       const form = [
         {name: "Text", id: "text"},
-        {name: "Start", id: "start", type: "datetime"},
-        {name: "End", id: "end", type: "datetime", onValidate: (args) => {
-            if (args.values.end.getTime() < args.values.start.getTime()) {
-              args.valid = false;
-              args.message = "End must be after start";
-            }
-          }
-        },
+        {name: "Start Time", id: "start", type: "datetime", options: generateTimeOptions("07:00", "22:00")},
+        {name: "End Time", id: "end", type: "datetime", options: generateTimeOptions("07:00", "22:00")},
         {name: "Project", id: "project", options: projects}
       ];
       const data = {
@@ -93,11 +100,12 @@ const Timesheet = () => {
       dp.clearSelection();
       if (modal.canceled) { return; }
       dp.events.add({
-        start: args.start,
-        end: args.end,
+        start: modal.result.start,
+        end: modal.result.end,
         id: DayPilot.guid(),
         resource: args.resource,
-        text: modal.result
+        text: modal.result.text,
+        project: modal.result.project
       });
     }
   });
@@ -159,7 +167,9 @@ const Timesheet = () => {
         ...prevConfig,
         rowHeaderColumns: [
           {name: "Date"},
-          {name: "Day", width: 40}
+          {name: "Day", width: 40},
+          {name: "Start Time", width: 80, type: "datetime", options: generateTimeOptions("07:00", "22:00")},
+          {name: "End Time", width: 80, type: "datetime", options: generateTimeOptions("07:00", "22:00")}
         ]
       }));
     }
@@ -175,6 +185,22 @@ const Timesheet = () => {
         {...config}
         ref={schedulerRef}
       />
+       <button
+        className="submit-button"
+        style={{
+          position: 'fixed',
+          bottom: '20px', // Adjust this value to change the vertical position
+          right: '20px', // Adjust this value to change the horizontal position
+          padding: '10px 20px',
+          backgroundColor: '#007bff',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: 'pointer'
+        }}
+      >
+        Submit
+      </button>
     </div>
   );
 }
